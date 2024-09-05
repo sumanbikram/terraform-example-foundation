@@ -146,6 +146,101 @@ variable "initial_group_config" {
   default     = "WITH_INITIAL_OWNER"
 }
 
+variable "cloudbuildv2_repository_config" {
+  description = <<-EOT
+  Configuration for integrating repositories with Cloud Build v2:
+    - repo_type: Specifies the type of repository. Supported types are 'GITHUBv2', 'GITLABv2', and 'CSR'.
+    - repositories: A map of repositories to be created. The key must match the exact name of the repository. Each repository is defined by:
+        - repository_name: The name of the repository.
+        - repository_url: The URL of the repository.
+    - github_pat: (Optional) The personal access token for GitHub authentication.
+    - github_app_id: (Optional) The application ID for a GitHub App used for authentication.
+    - gitlab_read_authorizer_credential: (Optional) The read authorizer credential for GitLab access.
+    - gitlab_authorizer_credential: (Optional) The authorizer credential for GitLab access.
+
+  Note: When using GITLABv2, specify `gitlab_read_authorizer_credential` and `gitlab_authorizer_credential`.
+  Note: When using GITHUBv2, specify `github_pat` and `github_app_id`.
+  Note: If 'cloudbuildv2' is not configured, CSR (Cloud Source Repositories) will be used by default.
+  EOT
+  type = object({
+    repo_type = string # Supported values are: GITHUBv2, GITLABv2 and CSR
+    # repositories to be created
+    repositories = object({
+      bootstrap = object({
+        repository_name = optional(string, "gcp-bootstrap")
+        repository_url  = string
+      }),
+      org = object({
+        repository_name = optional(string, "gcp-org")
+        repository_url  = string
+      }),
+      env = object({
+        repository_name = optional(string, "gcp-environments")
+        repository_url  = string
+      }),
+      net = object({
+        repository_name = optional(string, "gcp-networks")
+        repository_url  = string
+      }),
+      proj = object({
+        repository_name = optional(string, "gcp-projects")
+        repository_url  = string
+      }),
+      tf_cloud_builder = object({
+        repository_name = optional(string, "tf-cloud-builder")
+        repository_url  = string
+      }),
+    })
+    # Credential Config for each repository type
+    github_pat                        = optional(string)
+    github_app_id                     = optional(string)
+    gitlab_read_authorizer_credential = optional(string)
+    gitlab_authorizer_credential      = optional(string)
+  })
+
+  # If cloudbuildv2 is not configured, then auto-creation with CSR will be used
+  default = {
+    repo_type = "CSR"
+    repositories = {
+      bootstrap = {
+        repository_url = ""
+      },
+      env = {
+        repository_url = ""
+      }
+      net = {
+        repository_url = ""
+      }
+      org = {
+        repository_url = ""
+      }
+      proj = {
+        repository_url = ""
+      }
+      tf_cloud_builder = {
+        repository_url = ""
+      }
+    }
+  }
+  validation {
+    condition = (
+      var.cloudbuildv2_repository_config.repo_type == "GITHUBv2" ? (
+        var.cloudbuildv2_repository_config.github_pat != null &&
+        var.cloudbuildv2_repository_config.github_app_id != null &&
+        var.cloudbuildv2_repository_config.gitlab_read_authorizer_credential == null &&
+        var.cloudbuildv2_repository_config.gitlab_authorizer_credential == null
+        ) : var.cloudbuildv2_repository_config.repo_type == "GITLABv2" ? (
+        var.cloudbuildv2_repository_config.github_pat == null &&
+        var.cloudbuildv2_repository_config.github_app_id == null &&
+        var.cloudbuildv2_repository_config.gitlab_read_authorizer_credential != null &&
+        var.cloudbuildv2_repository_config.gitlab_authorizer_credential != null
+      ) : var.cloudbuildv2_repository_config.repo_type == "CSR" ? true : false
+    )
+    error_message = "You must specify a valid repo_type ('GITHUBv2', 'GITLABv2', or 'CSR'). For 'GITHUBv2', all 'github_' prefixed variables must be defined and no 'gitlab_' prefixed variables should be defined. For 'GITLABv2', all 'gitlab_' prefixed variables must be defined and no 'github_' prefixed variables should be defined."
+  }
+
+}
+
 /* ----------------------------------------
     Specific to github_bootstrap
    ---------------------------------------- */

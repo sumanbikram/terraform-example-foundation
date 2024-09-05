@@ -39,11 +39,6 @@ variable "billing_account" {
   type        = string
 }
 
-variable "app_infra_repos" {
-  description = "A list of Cloud Source Repos to be created to hold app infra Terraform configs."
-  type        = list(string)
-}
-
 variable "terraform_docker_tag_version" {
   description = "TAG version of the terraform docker image."
   type        = string
@@ -79,3 +74,55 @@ variable "vpc_service_control_attach_dry_run" {
   type        = bool
   default     = false
 }
+
+variable "cloudbuildv2_repository_config" {
+  description = <<-EOT
+  Configuration for integrating repositories with Cloud Build v2:
+    - repo_type: Specifies the type of repository. Supported types are 'GITHUBv2', 'GITLABv2', and 'CSR'.
+    - repositories: A map of repositories to be created. The key must match the exact name of the repository. Each repository is defined by:
+        - repository_name: The name of the repository.
+        - repository_url: The HTTPS clone URL of the repository ending in `.git`.
+    - github_pat: (Optional) The personal access token for GitHub authentication.
+    - github_app_id: (Optional) The application ID for a GitHub App used for authentication.
+    - gitlab_read_authorizer_credential: (Optional) The read authorizer credential for GitLab access.
+    - gitlab_authorizer_credential: (Optional) The authorizer credential for GitLab access.
+
+  Note: If 'cloudbuildv2' is not configured, CSR (Cloud Source Repositories) will be used by default.
+  EOT
+  type = object({
+    repo_type = string # Supported values are: GITHUBv2, GITLABv2 and CSR
+    # repositories to be created, the key name must be exactly the same as the repository name
+    repositories = map(object({
+      repository_name = string,
+      repository_url  = string,
+    }))
+    # Credential Config for each repository type
+    github_pat                        = optional(string)
+    github_app_id                     = optional(string)
+    gitlab_read_authorizer_credential = optional(string)
+    gitlab_authorizer_credential      = optional(string)
+  })
+
+  # If cloudbuildv2 is not configured, then auto-creation with CSR will be used
+  default = {
+    repo_type    = "CSR"
+    repositories = {}
+  }
+  validation {
+    condition = (
+      var.cloudbuildv2_repository_config.repo_type == "GITHUBv2" ? (
+        var.cloudbuildv2_repository_config.github_pat != null &&
+        var.cloudbuildv2_repository_config.github_app_id != null &&
+        var.cloudbuildv2_repository_config.gitlab_read_authorizer_credential == null &&
+        var.cloudbuildv2_repository_config.gitlab_authorizer_credential == null
+        ) : var.cloudbuildv2_repository_config.repo_type == "GITLABv2" ? (
+        var.cloudbuildv2_repository_config.github_pat == null &&
+        var.cloudbuildv2_repository_config.github_app_id == null &&
+        var.cloudbuildv2_repository_config.gitlab_read_authorizer_credential != null &&
+        var.cloudbuildv2_repository_config.gitlab_authorizer_credential != null
+      ) : var.cloudbuildv2_repository_config.repo_type == "CSR" ? true : false
+    )
+    error_message = "You must specify a valid repo_type ('GITHUBv2', 'GITLABv2', or 'CSR'). For 'GITHUBv2', all 'github_' prefixed variables must be defined and no 'gitlab_' prefixed variables should be defined. For 'GITLABv2', all 'gitlab_' prefixed variables must be defined and no 'github_' prefixed variables should be defined."
+  }
+}
+
