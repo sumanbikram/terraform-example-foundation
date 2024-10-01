@@ -44,6 +44,7 @@ module "org_audit_logs" {
   billing_account          = local.billing_account
   folder_id                = google_folder.common.id
   activate_apis            = ["logging.googleapis.com", "bigquery.googleapis.com", "billingbudgets.googleapis.com"]
+  auto_create_network      = true
 
   labels = {
     environment       = "common"
@@ -77,6 +78,7 @@ module "org_billing_export" {
   billing_account          = local.billing_account
   folder_id                = google_folder.common.id
   activate_apis            = ["logging.googleapis.com", "bigquery.googleapis.com", "billingbudgets.googleapis.com"]
+  auto_create_network      = true
 
   labels = {
     environment       = "common"
@@ -110,6 +112,8 @@ module "common_kms" {
   billing_account          = local.billing_account
   folder_id                = google_folder.common.id
   activate_apis            = ["logging.googleapis.com", "cloudkms.googleapis.com", "billingbudgets.googleapis.com"]
+  auto_create_network      = true
+
 
   labels = {
     environment       = "common"
@@ -144,6 +148,8 @@ module "org_secrets" {
   billing_account          = local.billing_account
   folder_id                = google_folder.common.id
   activate_apis            = ["logging.googleapis.com", "secretmanager.googleapis.com", "billingbudgets.googleapis.com"]
+  auto_create_network      = true
+
 
   labels = {
     environment       = "common"
@@ -177,6 +183,8 @@ module "interconnect" {
   billing_account          = local.billing_account
   folder_id                = google_folder.network.id
   activate_apis            = ["billingbudgets.googleapis.com", "compute.googleapis.com"]
+  auto_create_network      = true
+
 
   labels = {
     environment       = "network"
@@ -210,6 +218,8 @@ module "scc_notifications" {
   billing_account          = local.billing_account
   folder_id                = google_folder.common.id
   activate_apis            = ["logging.googleapis.com", "pubsub.googleapis.com", "securitycenter.googleapis.com", "billingbudgets.googleapis.com", "cloudkms.googleapis.com"]
+  auto_create_network      = true
+
 
   labels = {
     environment       = "common"
@@ -242,6 +252,8 @@ module "dns_hub" {
   org_id                   = local.org_id
   billing_account          = local.billing_account
   folder_id                = google_folder.network.id
+  auto_create_network      = true
+
 
   activate_apis = [
     "compute.googleapis.com",
@@ -284,6 +296,8 @@ module "base_network_hub" {
   org_id                   = local.org_id
   billing_account          = local.billing_account
   folder_id                = google_folder.network.id
+  auto_create_network      = true
+
 
   activate_apis = [
     "compute.googleapis.com",
@@ -334,6 +348,8 @@ module "restricted_network_hub" {
   org_id                   = local.org_id
   billing_account          = local.billing_account
   folder_id                = google_folder.network.id
+  auto_create_network      = true
+
 
   activate_apis = [
     "compute.googleapis.com",
